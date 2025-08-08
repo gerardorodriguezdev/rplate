@@ -1,0 +1,3 @@
+/parentDirectory
+  /childDirectory
+    myfile.txt
