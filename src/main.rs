@@ -1,6 +1,6 @@
-use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::{env, fs};
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -12,27 +12,32 @@ fn main() -> std::io::Result<()> {
     let target_directory = &args[1];
     let file = File::open(&target_directory);
     let reader = BufReader::new(file?);
-    let mut spaces = State::new();
+    let mut state = State::new();
 
     for line in reader.lines() {
         let line = line?;
 
-        if line.len() < spaces.count + 1 {
+        if line.len() < state.spaces + 1 {
             panic!("Target line is too short");
         }
 
-        for char in line.chars().take(spaces.count) {
+        for char in line.chars().take(state.spaces) {
             if char != ' ' {
                 panic!("Invalid character");
             }
         }
 
-        let is_directory = line.chars().nth(spaces.count).unwrap() == '/';
+        let is_directory = line.chars().nth(state.spaces).unwrap() == '/';
         if is_directory {
-            println!("Directory");
-            spaces.increase_level();
+            let directory = line.chars().skip(state.spaces).collect::<String>();
+            state.increment_spaces();
+            state.append_parent(directory.clone());
+            fs::create_dir_all(&state.parent)?;
         } else {
-            println!("File");
+            let file_name = line.chars().skip(state.spaces).collect::<String>();
+            let parent = state.parent.clone();
+            let path = parent + "/" + file_name.as_str();
+            fs::write(path, "")?;
         }
     }
 
@@ -40,19 +45,29 @@ fn main() -> std::io::Result<()> {
 }
 
 struct State {
-    count: usize,
+    spaces: usize,
     parent: String,
 }
 
 impl State {
     fn new() -> Self {
         State {
-            count: 0,
+            spaces: 0,
             parent: String::from(""),
         }
     }
 
-    fn increase_level(&mut self) {
-        self.count += 2;
+    fn increment_spaces(&mut self) {
+        self.spaces += 2;
+    }
+
+    fn append_parent(&mut self, new_parent: String) {
+        if self.parent.is_empty() {
+            let mut other_parent = new_parent.clone();
+            other_parent.remove(0);
+            self.parent = other_parent;
+        } else {
+            self.parent += &new_parent;
+        }
     }
 }
