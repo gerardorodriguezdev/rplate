@@ -1,6 +1,4 @@
-# RPlate
-
-A simple command line utility written in Rust for creating directory structures and files from text-based templates.
+Rust sample of a simple command line utility for creating directory structures and files from text-based templates.
 
 ## Template format
 
